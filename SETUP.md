@@ -33,10 +33,16 @@ This installs:
 # Skills
 cp skills/*.md ~/.claude/commands/
 
-# Hooks
-cp hooks/*.sh ~/.claude/hooks/
-chmod +x ~/.claude/hooks/argos-precheck.sh
-chmod +x ~/.claude/hooks/pantheon-notify.sh
+# Session hooks go to ~/.claude/ (referenced directly by settings.json)
+cp hooks/pantheon_hook.sh ~/.claude/
+cp hooks/pantheon_stop_hook.sh ~/.claude/
+chmod +x ~/.claude/pantheon_hook.sh ~/.claude/pantheon_stop_hook.sh
+
+# Utility hooks go to ~/.claude/hooks/
+mkdir -p ~/.claude/hooks
+cp hooks/argos-precheck.sh ~/.claude/hooks/
+cp hooks/pantheon-notify.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/argos-precheck.sh ~/.claude/hooks/pantheon-notify.sh
 
 # Notifications directory
 mkdir -p ~/.claude/notifications
