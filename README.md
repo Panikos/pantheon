@@ -48,6 +48,42 @@ Open Claude Code in any project and run:
 
 This schedules Argos to evaluate your project every 10 minutes while the REPL is open.
 
+### 3b. Auto-start on session resume (optional)
+
+Add this to your `~/.claude/settings.json` to have Pantheon prompt you to start on every new session:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [ ! -f \"$HOME/.claude/pantheon_checked\" ] || [ \"$(find \"$HOME/.claude/pantheon_checked\" -mmin +1440 2>/dev/null)\" ]; then touch \"$HOME/.claude/pantheon_checked\"; if [ -f \"$HOME/.claude/scheduled_tasks.json\" ] && grep -q \"argos\" \"$HOME/.claude/scheduled_tasks.json\" 2>/dev/null; then echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON] Argos schedule is active.\\\"}\"; else echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON-AUTOSTART] No active Argos schedule. Ask the user: Pantheon autonomous monitoring is not running. Would you like me to start it? Then wait for their answer. If yes, run /pantheon start 10m. If no, acknowledge and continue.\\\"}\"; fi; else echo \"{\\\"result\\\":\\\"pass\\\"}\"; fi'",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+And add this to your `~/.claude/CLAUDE.md`:
+
+```markdown
+### Pantheon Startup Behavior
+When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
+1. Inform the user that Pantheon autonomous monitoring is not running
+2. Ask if they want to start it (suggest `/pantheon start 10m`)
+3. If they agree, invoke `/pantheon start 10m`
+4. If they decline, acknowledge and continue
+```
+
+This checks once per 24 hours. If no Argos schedule is active, Claude will ask you before starting.
+
 ### 4. Deploy the cloud daemon (optional, always-on)
 
 ```
