@@ -199,14 +199,33 @@ The `pantheon-notify.sh` script provides multi-channel notifications:
 
 ## Session Tracking & Auto-Start
 
-A `UserPromptSubmit` hook in Claude Code's settings manages session lifecycle:
+### State File Scoping
 
-1. Increments `~/.claude/pantheon_session_count` on each session's first message
-2. Checks `~/.claude/pantheon_disabled` — if present, skips all auto-start behavior
-3. Checks `~/.claude/scheduled_tasks.json` for an active Argos cron
-4. If schedule exists: quiet (24h cooldown on status messages)
-5. If no schedule: instructs Claude to **auto-start** Pantheon immediately (5-min cooldown)
-6. Reads `~/.claude/pantheon_schedule_meta.json` for the user's preferred interval
+Pantheon state is split into two categories to support parallel sessions:
+
+**Global state** (`~/.claude/`):
+- `pantheon_disabled` — opt-out flag (affects ALL sessions/projects)
+- `pantheon_deploy_active` — remote deploy marker (one remote trigger is shared)
+- `pantheon_hook.sh`, `pantheon_stop_hook.sh` — the hook scripts themselves
+
+**Project-scoped state** (`~/.claude/projects/<PROJECT_ID>/pantheon/`):
+- `autostart_fired` — 30-min cooldown per project
+- `schedule_meta.json` — interval preference per project
+- `session_count` — counter for Morpheus gates per project
+
+The project ID is derived from `$PWD` using: `pwd | sed 's|^/c/|C--|' | sed 's|^/[A-Za-z]/|/|' | sed 's|^/||' | sed 's|/|-|g'` — matching Claude Code's own `projects/` directory naming.
+
+### Auto-Start Flow
+
+A `UserPromptSubmit` hook manages session lifecycle:
+
+1. Derives project path from `$PWD`
+2. Increments project-scoped session counter
+3. Checks `~/.claude/pantheon_disabled` (global) — if present, skips
+4. Checks project-scoped `autostart_fired` — if touched within 30 min, skips
+5. Checks `~/.claude/scheduled_tasks.json` for an active Argos cron
+6. If schedule exists: quiet confirmation
+7. If no schedule: `[PANTHEON-AUTOSTART]` directive with project-scoped interval preference
 
 **Auto-start is a directive, not a suggestion.** Claude starts Pantheon and announces it — no user permission required. Users opt out via the `pantheon_disabled` file.
 

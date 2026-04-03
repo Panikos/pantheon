@@ -61,7 +61,8 @@ if [ -f "TECH_DEBT.md" ] && grep -qi "open\|deferred" "TECH_DEBT.md" 2>/dev/null
 fi
 
 # 5. Morpheus: memory stale? (>24h since last dream)
-MEMORY_INDEX="$HOME/.claude/projects/$(pwd | sed 's|/|--|g' | sed 's|:||g')/memory/MEMORY.md"
+PROJECT_ID=$(pwd | sed 's|^/c/|C--|' | sed 's|^/[A-Za-z]/|/|' | sed 's|^/||' | sed 's|/|-|g')
+MEMORY_INDEX="$HOME/.claude/projects/$PROJECT_ID/memory/MEMORY.md"
 if [ -f "$MEMORY_INDEX" ]; then
   LAST_DREAM=$(grep -o 'Last dream: [0-9-]*' "$MEMORY_INDEX" 2>/dev/null | head -1 | cut -d' ' -f3)
   if [ -n "$LAST_DREAM" ]; then

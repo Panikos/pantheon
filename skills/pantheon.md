@@ -24,8 +24,8 @@ Start the autonomous suite with a default 10-minute interval (or user-specified)
 - Convert the interval to a cron expression (e.g., "10m" → "*/10 * * * *", "30m" → "*/30 * * * *", "1h" → "7 * * * *")
 - Avoid :00 and :30 minute marks for intervals — offset by a few minutes
 - Use `durable: true` so the schedule survives session restarts
-- Save interval preference: write `{"interval":"10m","created":"YYYY-MM-DD","cron":"*/10 * * * *"}` to `~/.claude/pantheon_schedule_meta.json`
-- Remove `~/.claude/pantheon_disabled` if it exists
+- Save interval preference: write `{"interval":"10m","created":"YYYY-MM-DD","cron":"*/10 * * * *"}` to the **project-scoped** path. Derive the project path: run `pwd | sed 's|^/c/|C--|' | sed 's|^/[A-Za-z]/|/|' | sed 's|^/||' | sed 's|/|-|g'` to get the project ID, then write to `~/.claude/projects/<PROJECT_ID>/pantheon/schedule_meta.json`. Create the directory if needed.
+- Remove `~/.claude/pantheon_disabled` if it exists (global)
 - The prompt for the cron job should include the pre-check gate to avoid wasting API calls on empty ticks.
 
 Example:

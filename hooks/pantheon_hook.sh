@@ -1,28 +1,48 @@
 #!/bin/bash
 # pantheon_hook.sh — Pantheon startup check for UserPromptSubmit hook
-# Fires once per session (~30 min window), then stays silent.
+# Fires once per session (~30 min window per project), then stays silent.
+# State is project-scoped; disable/deploy are global.
 
 CLAUDE_DIR="$HOME/.claude"
+
+# Global controls
 DISABLED_FILE="$CLAUDE_DIR/pantheon_disabled"
-FIRED_FILE="$CLAUDE_DIR/pantheon_autostart_fired"
+DEPLOY_MARKER="$CLAUDE_DIR/pantheon_deploy_active"
+
+# Project-scoped state (matches Claude Code's project path pattern)
+PROJECT_ID=$(pwd | sed 's|^/c/|C--|' | sed 's|^/[A-Za-z]/|/|' | sed 's|^/||' | sed 's|/|-|g')
+PANTHEON_DIR="$CLAUDE_DIR/projects/$PROJECT_ID/pantheon"
+mkdir -p "$PANTHEON_DIR" 2>/dev/null
+
+FIRED_FILE="$PANTHEON_DIR/autostart_fired"
+META_FILE="$PANTHEON_DIR/schedule_meta.json"
+COUNT_FILE="$PANTHEON_DIR/session_count"
 SCHEDULE_FILE="$CLAUDE_DIR/scheduled_tasks.json"
-META_FILE="$CLAUDE_DIR/pantheon_schedule_meta.json"
+
+# Increment session counter (project-scoped)
+if [ -f "$COUNT_FILE" ]; then
+  COUNT=$(cat "$COUNT_FILE")
+else
+  COUNT=0
+fi
+COUNT=$((COUNT + 1))
+echo $COUNT > "$COUNT_FILE"
 
 silent_pass() {
   echo '{"result":"pass"}'
   exit 0
 }
 
-# 1. Disabled? → always silent
+# 1. Disabled globally? → always silent
 [ -f "$DISABLED_FILE" ] && silent_pass
 
-# 2. Already fired in the last 30 minutes? → silent (prevents repeated nagging)
+# 2. Already fired for THIS PROJECT in the last 30 minutes? → silent
 if [ -f "$FIRED_FILE" ]; then
   STALE=$(find "$FIRED_FILE" -mmin +30 2>/dev/null)
   [ -z "$STALE" ] && silent_pass
 fi
 
-# First meaningful fire this session — mark it
+# First meaningful fire this session for this project — mark it
 touch "$FIRED_FILE"
 
 # 3. Check if remote deploy pushed commits while we were away
@@ -45,10 +65,15 @@ if [ -f "$SCHEDULE_FILE" ] && grep -q "argos" "$SCHEDULE_FILE" 2>/dev/null; then
   exit 0
 fi
 
-# 4. No Argos schedule → request AUTOSTART
+# 5. No Argos schedule → request AUTOSTART
+# Read interval from project-scoped meta, fall back to global meta, fall back to default
 INTERVAL="10m"
 if [ -f "$META_FILE" ]; then
   SAVED=$(grep -o '"interval":"[^"]*"' "$META_FILE" 2>/dev/null | cut -d'"' -f4)
+  [ -n "$SAVED" ] && INTERVAL="$SAVED"
+elif [ -f "$CLAUDE_DIR/pantheon_schedule_meta.json" ]; then
+  # Migration: read from old global location
+  SAVED=$(grep -o '"interval":"[^"]*"' "$CLAUDE_DIR/pantheon_schedule_meta.json" 2>/dev/null | cut -d'"' -f4)
   [ -n "$SAVED" ] && INTERVAL="$SAVED"
 fi
 
