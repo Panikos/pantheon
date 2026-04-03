@@ -226,7 +226,7 @@ Local cron jobs are session-scoped by default. Use `durable: true` (Pantheon doe
 ### Hook doesn't fire on session start
 - Verify the hook is in `~/.claude/settings.json` under `hooks.SessionStart`
 - Verify `~/.claude/pantheon_hook.sh` exists and is executable
-- The hook has a 30-minute cooldown — delete `~/.claude/pantheon_autostart_fired` to force a re-check
+- The `SessionStart` hook fires once per session start — no cooldown file is used
 
 ### Argos runs but does nothing
 - Check `argos-precheck.sh` is executable: `chmod +x ~/.claude/hooks/argos-precheck.sh`

@@ -21,7 +21,7 @@ for arg in "$@"; do
             "$CLAUDE_HOME/hooks/argos-precheck.sh" \
             "$CLAUDE_HOME/hooks/pantheon-notify.sh"
       echo "Removed skill and hook files."
-      echo "NOTE: You must manually remove the UserPromptSubmit hook"
+      echo "NOTE: You must manually remove the SessionStart hook"
       echo "  from ~/.claude/settings.json and the Startup Behavior"
       echo "  section from ~/.claude/CLAUDE.md if you added them."
       exit 0
@@ -138,7 +138,7 @@ if ! $SKIP_HOOKS; then
       fi
     else
       if $DRY_RUN; then
-        echo "  [DRY] Would add UserPromptSubmit hook to settings.json"
+        echo "  [DRY] Would add SessionStart hook to settings.json"
         echo ""
         warn "Manual step required (--dry-run prevents auto-edit):"
         echo "  Add the following to your settings.json 'hooks' section."
@@ -188,7 +188,7 @@ if ! $SKIP_HOOKS; then
 ## AUTONOMOUS AGENTS (Pantheon Suite)
 
 ### Startup Behavior
-A `UserPromptSubmit` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
+A `SessionStart` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
 1. Immediately create a durable CronCreate schedule for Argos (default: every 10 minutes)
 2. Read `~/.claude/pantheon_schedule_meta.json` if it exists — use the stored interval preference instead of the default
 3. Announce to the user: "Pantheon started: Argos monitoring every [interval]." — one line, not a question
@@ -257,7 +257,7 @@ else
   echo "    pantheon-notify.sh   — notifications (file + Windows toast)"
   echo ""
   echo -e "  ${BOLD}Next steps:${NC}"
-  echo "    1. Add the UserPromptSubmit hook to settings.json (see above)"
+  echo "    1. Add the SessionStart hook to settings.json (see above)"
   echo "    2. Open Claude Code in any project"
   echo "    3. Run: /pantheon start 10m"
   echo "    4. (Optional) Run: /pantheon deploy — for always-on cloud daemon"

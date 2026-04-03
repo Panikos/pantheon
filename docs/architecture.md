@@ -246,7 +246,7 @@ Pantheon state is split into two categories to support parallel sessions:
 - `pantheon_hook.sh`, `pantheon_stop_hook.sh` — the hook scripts themselves
 
 **Project-scoped state** (`~/.claude/projects/<PROJECT_ID>/pantheon/`):
-- `autostart_fired` — 30-min cooldown per project
+- `autostart_fired` — legacy file (not needed with SessionStart hook)
 - `schedule_meta.json` — interval preference per project
 - `session_count` — counter for Morpheus gates per project
 
@@ -259,7 +259,7 @@ A `SessionStart` hook manages session lifecycle:
 1. Derives project path from `$PWD`
 2. Increments project-scoped session counter
 3. Checks `~/.claude/pantheon_disabled` (global) — if present, skips
-4. Checks project-scoped `autostart_fired` — if touched within 30 min, skips
+4. (SessionStart fires once per session — no cooldown needed)
 5. Checks `~/.claude/scheduled_tasks.json` for an active Argos cron
 6. If schedule exists: quiet confirmation
 7. If no schedule: `[PANTHEON-AUTOSTART]` directive with project-scoped interval preference

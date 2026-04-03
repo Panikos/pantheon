@@ -98,7 +98,7 @@ Do NOT ask the user for permission. Do NOT silently ignore the message. Start th
 If the file `~/.claude/pantheon_disabled` exists, skip auto-start entirely and say nothing.
 ```
 
-The hook uses a 30-minute cooldown to prevent nagging within a session. Auto-start is a directive — Claude starts Pantheon and announces it without asking.
+The `SessionStart` hook fires once when the session begins — no cooldown needed. Claude receives the auto-start directive as injected context before any user message.
 
 ### 4. Deploy the cloud daemon (optional, always-on)
 
