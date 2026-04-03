@@ -4,18 +4,21 @@
 
 | Capability | Kairos (Claude internal) | Pantheon (ours) | Gap Severity |
 |---|---|---|---|
-| **Tick injection** | Runtime injects `<tick>` into message queue when idle — zero config, always on | CronCreate polls on interval — requires manual `/pantheon start`, session-dependent | MAJOR |
-| **SleepTool** | Dedicated tool the model calls to yield explicitly, saving API cost | No real yield — each cron tick costs a full API call regardless | MAJOR |
+| **Tick injection** | Runtime injects `<tick>` into message queue when idle — zero config, always on | CronCreate polls on interval + auto-start hook on session resume | MAJOR → MITIGATED |
+| **SleepTool** | Dedicated tool the model calls to yield explicitly, saving API cost | Pre-check bash gate (`argos-precheck.sh`) skips empty ticks before API call | MAJOR → MITIGATED |
 | **15s blocking budget** | Runtime auto-backgrounds commands >15s, model stays responsive | Mentioned in Argos prompt but no enforcement — just a prompt instruction | MEDIUM |
 | **Append-only logging** | Enforced by runtime — model cannot delete/rewrite logs | Instructed "append only" but nothing prevents the model from rewriting | MEDIUM |
 | **SendUserMessage / BriefTool** | Dedicated tool with `status: 'proactive'` vs `'normal'`, three rendering tiers, push notifications | No separate output channel — everything goes to stdout | MAJOR |
-| **Durable daemon** | Runs as a true background process, survives terminal close, systemd-style lifecycle | Dies when Claude Code exits. Durable cron persists the schedule but nothing fires until REPL reopens | CRITICAL |
+| **Durable daemon** | Runs as a true background process, survives terminal close, systemd-style lifecycle | Two-tier: local CronCreate + remote RemoteTrigger (cloud, 1h min) | CRITICAL → MITIGATED |
 | **GitHub webhooks** | Native webhook subscriptions — real-time event-driven, not polling | `gh` CLI polling every 5 min via cron | MEDIUM |
 | **autoDream** | Forked sub-agent with read-only bash, runs automatically during idle, three-gate trigger system | `/morpheus` functionally equivalent in logic (4-phase, gates, 200-line limit) but must be triggered by Argos or manually | SMALL |
 | **ULTRAPLAN** | Remote container running Opus with 30 min dedicated think time, browser UI for approval, `__TELEPORT_LOCAL__` sentinel | `/athena` runs in-session with normal context limits, no remote offload, no dedicated browser UI | MAJOR |
 | **Feature flags** | 44 compile-time flags gating capabilities | None — everything is always on | MINOR |
-| **Session awareness** | Tracks session count, idle time, last activity automatically | Hook checks once per 24h via timestamp file | MEDIUM |
-| **Cost management** | Prompt cache expires after 5 min idle — SleepTool balances wake-up cost vs cache expiry | No cost awareness — every cron tick is a full-price API call | MAJOR |
+| **Session awareness** | Tracks session count, idle time, last activity automatically | Project-scoped session counter + 30-min cooldown hook | MEDIUM → MITIGATED |
+| **Cost management** | Prompt cache expires after 5 min idle — SleepTool balances wake-up cost vs cache expiry | Pre-check gate skips ~80% of ticks | MAJOR → MITIGATED |
+| **Coordinator Mode** | One Claude orchestrates parallel workers via mailbox system | No equivalent — `/review-all` chains sequentially | MAJOR |
+| **BUDDY companion** | 18 species, 5 stats, rarity tiers, cosmetic system | Duskit exists as minimal companion (no stats/species) | MINOR |
+| **Self-Healing Memory** | MEMORY.md as pointer index, topic files on-demand, strict write discipline | Morpheus implements same pattern (index + topic files + 200-line limit) | MATCHED |
 
 ## Critical Gaps (ranked by impact)
 

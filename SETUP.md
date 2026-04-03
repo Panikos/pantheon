@@ -48,7 +48,7 @@ Then follow the manual configuration steps below.
 
 ### Step 1: Add the startup hook to settings.json
 
-The installer copies `pantheon_hook.sh` to `~/.claude/`. Then add this to your `~/.claude/settings.json` hooks section:
+The installer copies `pantheon_hook.sh` and `pantheon_stop_hook.sh` to `~/.claude/`. Then add this to your `~/.claude/settings.json` hooks section:
 
 ```json
 {
@@ -57,11 +57,15 @@ The installer copies `pantheon_hook.sh` to `~/.claude/`. Then add this to your `
       {
         "matcher": "",
         "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/pantheon_hook.sh\"",
-            "timeout": 3000
-          }
+          {"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 3000}
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {"type": "command", "command": "bash \"$HOME/.claude/pantheon_stop_hook.sh\"", "timeout": 3000}
         ]
       }
     ]
@@ -69,12 +73,16 @@ The installer copies `pantheon_hook.sh` to `~/.claude/`. Then add this to your `
 }
 ```
 
-The external script (`pantheon_hook.sh`) handles all the logic:
-- Checks `~/.claude/pantheon_disabled` — skips if present
-- 30-minute cooldown via `~/.claude/pantheon_autostart_fired` — prevents repeated nagging within a session
+**Startup hook** (`pantheon_hook.sh`):
+- Checks `~/.claude/pantheon_disabled` (global) — skips if present
+- 30-minute cooldown via project-scoped `autostart_fired` — prevents repeated nagging
+- Checks for remote commits (git fetch + ahead count) — warns if remote Argos pushed while away
 - If Argos schedule is active: quiet `[PANTHEON]` confirmation
 - If no schedule: `[PANTHEON-AUTOSTART]` directive telling Claude to auto-start immediately
-- Reads preferred interval from `~/.claude/pantheon_schedule_meta.json`
+- Reads preferred interval from project-scoped `schedule_meta.json`
+
+**Stop hook** (`pantheon_stop_hook.sh`):
+- If remote deploy is active AND local commits are unpushed: warns user to push before closing
 
 ### Step 2: Add startup behavior to CLAUDE.md
 
@@ -186,8 +194,10 @@ For maximum coverage, run both:
 | `notifications/current.json` | `~/.claude/` | Latest notification (for watchers) |
 | `notifications/history.jsonl` | `~/.claude/` | Notification audit log |
 | `pantheon_hook.sh` | `~/.claude/` | Startup hook script (referenced by settings.json) |
-| `pantheon_autostart_fired` | `~/.claude/` | 30-min cooldown timestamp |
-| `pantheon_session_count` | `~/.claude/` | Session counter for Morpheus |
+| `pantheon_stop_hook.sh` | `~/.claude/` | Stop hook script (warns about unpushed commits) |
+| `pantheon/autostart_fired` | `~/.claude/projects/<ID>/` | 30-min cooldown (project-scoped) |
+| `pantheon/schedule_meta.json` | `~/.claude/projects/<ID>/` | Interval preference (project-scoped) |
+| `pantheon/session_count` | `~/.claude/projects/<ID>/` | Session counter for Morpheus (project-scoped) |
 | `scheduled_tasks.json` | `~/.claude/` | Durable cron schedules (auto-created) |
 | `logs/YYYY/MM/YYYY-MM-DD.md` | Project root | Argos daily activity logs |
 
