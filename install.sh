@@ -79,11 +79,28 @@ for f in "$SCRIPT_DIR/skills/"*.md; do
 done
 
 # ─── 2. Install hooks ────────────────────────────────────────
-info "Installing hooks to ~/.claude/hooks/..."
+info "Installing hooks..."
 mkdir -p "$CLAUDE_HOME/hooks"
+
+# pantheon_hook.sh goes to ~/.claude/ (referenced directly by settings.json)
+if [ -f "$SCRIPT_DIR/hooks/pantheon_hook.sh" ]; then
+  dst="$CLAUDE_HOME/pantheon_hook.sh"
+  if $DRY_RUN; then
+    [ -f "$dst" ] && echo "  [DRY] Would overwrite: $dst" || echo "  [DRY] Would install: $dst"
+  else
+    [ -f "$dst" ] && warn "Overwriting: pantheon_hook.sh"
+    cp "$SCRIPT_DIR/hooks/pantheon_hook.sh" "$dst"
+    chmod +x "$dst" 2>/dev/null || true
+    ok "pantheon_hook.sh -> ~/.claude/"
+    INSTALLED=$((INSTALLED + 1))
+  fi
+fi
+
+# Other hooks go to ~/.claude/hooks/
 for f in "$SCRIPT_DIR/hooks/"*.sh; do
   [ -f "$f" ] || continue
   bn=$(basename "$f")
+  [ "$bn" = "pantheon_hook.sh" ] && continue  # already handled above
   dst="$CLAUDE_HOME/hooks/$bn"
   if $DRY_RUN; then
     [ -f "$dst" ] && echo "  [DRY] Would overwrite: $dst" || echo "  [DRY] Would install: $dst"
@@ -109,7 +126,7 @@ if ! $SKIP_HOOKS; then
 
   if [ -f "$SETTINGS" ]; then
     # Check if hook already exists
-    if grep -q "PANTHEON-AUTOSTART" "$SETTINGS" 2>/dev/null; then
+    if grep -q "pantheon_hook" "$SETTINGS" 2>/dev/null || grep -q "PANTHEON-AUTOSTART" "$SETTINGS" 2>/dev/null; then
       if $DRY_RUN; then
         echo "  [DRY] Startup hook already present in settings.json"
       else
@@ -134,7 +151,7 @@ if ! $SKIP_HOOKS; then
         echo '        "hooks": ['
         echo '          {'
         echo '            "type": "command",'
-        echo '            "command": "bash -c '\''if [ ! -f \"$HOME/.claude/pantheon_checked\" ] || [ \"$(find \"$HOME/.claude/pantheon_checked\" -mmin +5 2>/dev/null)\" ]; then touch \"$HOME/.claude/pantheon_checked\"; if [ -f \"$HOME/.claude/scheduled_tasks.json\" ] && grep -q \"argos\" \"$HOME/.claude/scheduled_tasks.json\" 2>/dev/null; then echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON] Argos schedule is active.\\\"}\"; else echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON-AUTOSTART] No active Argos schedule. Ask the user: Pantheon autonomous monitoring is not running. Would you like me to start it? Then wait for their answer. If yes, run /pantheon start 10m. If no, acknowledge and continue.\\\"}\"; fi; else echo \"{\\\"result\\\":\\\"pass\\\"}\"; fi'\''", '
+        echo '            "command": "bash \"$HOME/.claude/pantheon_hook.sh\"",'
         echo '            "timeout": 3000'
         echo '          }'
         echo '        ]'
@@ -168,12 +185,16 @@ if ! $SKIP_HOOKS; then
 
 ### Startup Behavior
 A `UserPromptSubmit` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
-1. Inform the user that Pantheon autonomous monitoring is not running
-2. Ask if they want to start it (suggest `/pantheon start 10m`)
-3. If they agree, invoke the `/pantheon` skill with `start 10m`
-4. If they decline, acknowledge and continue with their original request
+1. Immediately create a durable CronCreate schedule for Argos (default: every 10 minutes)
+2. Read `~/.claude/pantheon_schedule_meta.json` if it exists — use the stored interval preference instead of the default
+3. Announce to the user: "Pantheon started: Argos monitoring every [interval]." — one line, not a question
+4. Then continue with the user'"'"'s original request
 
-Do NOT silently ignore `[PANTHEON-AUTOSTART]` messages. Always surface them to the user.
+Do NOT ask the user for permission. Do NOT silently ignore the message. Start the schedule, announce it, move on.
+
+If the file `~/.claude/pantheon_disabled` exists, skip auto-start entirely and say nothing.
+
+When you see a `[PANTHEON]` message (schedule already active), say nothing — it is informational.
 
 ### /pantheon — Orchestrator & Control Plane
 - `/pantheon start 10m` — schedule Argos on recurring cron (durable, survives restarts)

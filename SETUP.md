@@ -48,7 +48,7 @@ Then follow the manual configuration steps below.
 
 ### Step 1: Add the startup hook to settings.json
 
-Edit `~/.claude/settings.json` and add a `hooks` section (or merge into your existing one):
+The installer copies `pantheon_hook.sh` to `~/.claude/`. Then add this to your `~/.claude/settings.json` hooks section:
 
 ```json
 {
@@ -59,7 +59,7 @@ Edit `~/.claude/settings.json` and add a `hooks` section (or merge into your exi
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'if [ ! -f \"$HOME/.claude/pantheon_checked\" ] || [ \"$(find \"$HOME/.claude/pantheon_checked\" -mmin +5 2>/dev/null)\" ]; then touch \"$HOME/.claude/pantheon_checked\"; if [ -f \"$HOME/.claude/scheduled_tasks.json\" ] && grep -q \"argos\" \"$HOME/.claude/scheduled_tasks.json\" 2>/dev/null; then echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON] Argos schedule is active.\\\"}\"; else echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON-AUTOSTART] No active Argos schedule. Ask the user: Pantheon autonomous monitoring is not running. Would you like me to start it? Then wait for their answer. If yes, run /pantheon start 10m. If no, acknowledge and continue.\\\"}\"; fi; else echo \"{\\\"result\\\":\\\"pass\\\"}\"; fi'",
+            "command": "bash \"$HOME/.claude/pantheon_hook.sh\"",
             "timeout": 3000
           }
         ]
@@ -69,7 +69,12 @@ Edit `~/.claude/settings.json` and add a `hooks` section (or merge into your exi
 }
 ```
 
-**What this does:** On each new session (5-minute cooldown), it detects whether an Argos schedule is active. If not, it instructs Claude to **auto-start Pantheon immediately** and announce it — no user permission required. Reads preferred interval from `~/.claude/pantheon_schedule_meta.json` if it exists. Respects `~/.claude/pantheon_disabled` opt-out file.
+The external script (`pantheon_hook.sh`) handles all the logic:
+- Checks `~/.claude/pantheon_disabled` — skips if present
+- 30-minute cooldown via `~/.claude/pantheon_autostart_fired` — prevents repeated nagging within a session
+- If Argos schedule is active: quiet `[PANTHEON]` confirmation
+- If no schedule: `[PANTHEON-AUTOSTART]` directive telling Claude to auto-start immediately
+- Reads preferred interval from `~/.claude/pantheon_schedule_meta.json`
 
 ### Step 2: Add startup behavior to CLAUDE.md
 
@@ -180,7 +185,8 @@ For maximum coverage, run both:
 | `pantheon-notify.sh` | `~/.claude/hooks/` | Notification script |
 | `notifications/current.json` | `~/.claude/` | Latest notification (for watchers) |
 | `notifications/history.jsonl` | `~/.claude/` | Notification audit log |
-| `pantheon_checked` | `~/.claude/` | 24h cooldown timestamp |
+| `pantheon_hook.sh` | `~/.claude/` | Startup hook script (referenced by settings.json) |
+| `pantheon_autostart_fired` | `~/.claude/` | 30-min cooldown timestamp |
 | `pantheon_session_count` | `~/.claude/` | Session counter for Morpheus |
 | `scheduled_tasks.json` | `~/.claude/` | Durable cron schedules (auto-created) |
 | `logs/YYYY/MM/YYYY-MM-DD.md` | Project root | Argos daily activity logs |
@@ -192,8 +198,8 @@ Local cron jobs are session-scoped by default. Use `durable: true` (Pantheon doe
 
 ### Hook doesn't fire on session start
 - Verify the hook is in `~/.claude/settings.json` under `hooks.UserPromptSubmit`
-- Check that the bash command syntax is correct (escaped quotes are tricky)
-- The hook has a 5-minute cooldown to avoid nagging within a session — delete `~/.claude/pantheon_checked` to force a re-check
+- Verify `~/.claude/pantheon_hook.sh` exists and is executable
+- The hook has a 30-minute cooldown — delete `~/.claude/pantheon_autostart_fired` to force a re-check
 
 ### Argos runs but does nothing
 - Check `argos-precheck.sh` is executable: `chmod +x ~/.claude/hooks/argos-precheck.sh`

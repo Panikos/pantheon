@@ -62,7 +62,7 @@ Add this to your `~/.claude/settings.json` to have Pantheon prompt you to start 
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'if [ ! -f \"$HOME/.claude/pantheon_checked\" ] || [ \"$(find \"$HOME/.claude/pantheon_checked\" -mmin +5 2>/dev/null)\" ]; then touch \"$HOME/.claude/pantheon_checked\"; if [ -f \"$HOME/.claude/scheduled_tasks.json\" ] && grep -q \"argos\" \"$HOME/.claude/scheduled_tasks.json\" 2>/dev/null; then echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON] Argos schedule is active.\\\"}\"; else echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON-AUTOSTART] No active Argos schedule. Ask the user: Pantheon autonomous monitoring is not running. Would you like me to start it? Then wait for their answer. If yes, run /pantheon start 10m. If no, acknowledge and continue.\\\"}\"; fi; else echo \"{\\\"result\\\":\\\"pass\\\"}\"; fi'",
+            "command": "bash \"$HOME/.claude/pantheon_hook.sh\"",
             "timeout": 3000
           }
         ]
@@ -76,14 +76,17 @@ And add this to your `~/.claude/CLAUDE.md`:
 
 ```markdown
 ### Pantheon Startup Behavior
-When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
-1. Inform the user that Pantheon autonomous monitoring is not running
-2. Ask if they want to start it (suggest `/pantheon start 10m`)
-3. If they agree, invoke `/pantheon start 10m`
-4. If they decline, acknowledge and continue
+A `UserPromptSubmit` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
+1. Immediately create a durable CronCreate schedule for Argos (default: every 10 minutes)
+2. Read `~/.claude/pantheon_schedule_meta.json` if it exists — use the stored interval preference instead of the default
+3. Announce to the user: "Pantheon started: Argos monitoring every [interval]." — one line, not a question
+4. Then continue with the user's original request
+
+Do NOT ask the user for permission. Do NOT silently ignore the message. Start the schedule, announce it, move on.
+If the file `~/.claude/pantheon_disabled` exists, skip auto-start entirely and say nothing.
 ```
 
-If no Argos schedule is active, Claude will ask you on session start (5-minute cooldown prevents nagging within a session).
+The hook uses a 30-minute cooldown to prevent nagging within a session. Auto-start is a directive — Claude starts Pantheon and announces it without asking.
 
 ### 4. Deploy the cloud daemon (optional, always-on)
 
@@ -226,17 +229,19 @@ When Kairos ships, Pantheon's skill definitions and patterns should integrate na
 ```
 pantheon/
   skills/
-    pantheon.md      # Orchestrator — scheduling, monitoring, lifecycle
-    argos.md         # Daemon — decide-act-sleep evaluation loop
-    morpheus.md      # Memory — 4-phase consolidation process
-    athena.md        # Planning — deep strategic analysis
+    pantheon.md          # Orchestrator — scheduling, monitoring, lifecycle
+    argos.md             # Daemon — decide-act-sleep evaluation loop
+    morpheus.md          # Memory — 4-phase consolidation process
+    athena.md            # Planning — deep strategic analysis
   hooks/
+    pantheon_hook.sh     # Startup hook — auto-starts Pantheon on session resume
     argos-precheck.sh    # Lightweight pre-check gate (saves ~80% API cost)
     pantheon-notify.sh   # Notification system (file + Windows toast)
   docs/
     gaps_list.md         # Full Kairos vs Pantheon gap analysis
     architecture.md      # Detailed architecture documentation
   install.sh             # Interactive installer
+  SETUP.md               # Step-by-step setup guide
   LICENSE                # Apache 2.0
   README.md              # This file
 ```
