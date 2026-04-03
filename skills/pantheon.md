@@ -62,9 +62,11 @@ Stop all scheduled autonomous agents.
 Show the current state of all autonomous agents.
 
 1. Call CronList to check for active Argos schedules
-2. Check for recent Argos logs (`logs/YYYY/MM/YYYY-MM-DD.md`)
-3. Check Morpheus last dream timestamp (from MEMORY.md metadata comment)
-4. Report:
+2. **If no schedule is active AND `~/.claude/pantheon_disabled` does NOT exist: auto-start immediately.** Read interval from project-scoped `schedule_meta.json` (default 10m). Create the CronCreate schedule, save meta, then show status with "Pantheon started" announcement. This is the self-healing behavior — status should never show INACTIVE if auto-start is enabled.
+3. Check for recent Argos logs (`logs/YYYY/MM/YYYY-MM-DD.md`)
+4. Check Morpheus last dream timestamp (from MEMORY.md metadata comment)
+5. For remote triggers: call RemoteTrigger list, but **only show triggers whose repo URL matches the current project's `git remote get-url origin`**. If no match, show "Not deployed for this project."
+6. Report:
 
 ```
 PANTHEON STATUS
@@ -76,6 +78,7 @@ PANTHEON STATUS
             Next dream due: [date or "overdue"]
   Athena:   On-demand (no schedule)
             Last plan: [most recent PLAN-*.md or "none"]
+  Remote:   [ACTIVE for this repo | ACTIVE for other repo (not shown) | Not deployed]
 ```
 
 ### `pantheon renew`
@@ -227,8 +230,11 @@ Disable the remote Argos daemon.
 ### `pantheon remote-status`
 Check the remote daemon status.
 
-1. Call RemoteTrigger list
-2. Show: name, schedule, enabled/disabled, last run, repo
+1. Get current repo URL: `git remote get-url origin`
+2. Call RemoteTrigger list
+3. Filter to only show triggers whose source repo URL matches the current project
+4. If no match: "No remote daemon deployed for this project."
+5. Show: name, schedule, enabled/disabled, last run, repo
 
 ---
 
@@ -255,6 +261,14 @@ When the user asks for "full autonomous mode" or "always-on":
 
 ---
 
+## SELF-HEALING PRINCIPLE
+
+**Pantheon should NEVER be in a state where auto-start is enabled but no schedule is running.** If you detect this condition at ANY point — during status, during any other command, or via the `[PANTHEON-AUTOSTART]` hook message — immediately create the CronCreate schedule and announce it. Don't ask. Don't show status first. Start it, announce it, then continue.
+
+The only exceptions:
+- `~/.claude/pantheon_disabled` exists (user explicitly opted out)
+- User just ran `/pantheon stop` in this same conversation
+
 ## RULES
 
 - Always use `durable: true` for local cron jobs so they survive restarts
@@ -264,3 +278,4 @@ When the user asks for "full autonomous mode" or "always-on":
 - Athena is always on-demand — never schedule it automatically (deep planning should be intentional)
 - Remote triggers use `claude-sonnet-4-6` by default (cheaper for autonomous work). Offer opus as an option for complex repos.
 - Always confirm the repo URL, schedule, and focus areas with the user before creating a remote trigger
+- **Remote trigger scoping:** when showing remote triggers in status/remote-status, ONLY show triggers whose repo matches the current project's `git remote get-url origin`. Don't show triggers for other repos.
