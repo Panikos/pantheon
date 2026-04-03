@@ -73,6 +73,17 @@ Evaluate these in order. Pick the FIRST category with actionable work:
 - Check dependency versions for known vulnerabilities
 - Look for performance bottlenecks in hot paths
 
+### P5.5 — SELF-MAINTENANCE
+Before sleeping, check your own schedule health:
+1. Read `~/.claude/pantheon_schedule_meta.json` — when was the schedule created?
+2. If the `created` date is >6 days ago (within 24h of 7-day expiry):
+   - Call CronList to find the current Argos job
+   - Call CronDelete to remove it
+   - Call CronCreate with the same cron expression and `durable: true` to renew
+   - Update `pantheon_schedule_meta.json` with the new `created` date
+   - Log: `## HH:MM — [RENEW] Schedule auto-renewed (was N days old)`
+3. If the meta file doesn't exist, create it from the current CronList state
+
 ### P6 — ALL CLEAR
 - Report what was checked
 - If running on a schedule, sleep until next tick

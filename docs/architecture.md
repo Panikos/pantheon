@@ -197,13 +197,20 @@ The `pantheon-notify.sh` script provides multi-channel notifications:
 }
 ```
 
-## Session Tracking
+## Session Tracking & Auto-Start
 
-A `UserPromptSubmit` hook in Claude Code's settings tracks session activity:
+A `UserPromptSubmit` hook in Claude Code's settings manages session lifecycle:
 
 1. Increments `~/.claude/pantheon_session_count` on each session's first message
-2. Checks for active Argos schedule once per 24 hours
-3. Nudges user if no schedule is active
+2. Checks `~/.claude/pantheon_disabled` — if present, skips all auto-start behavior
+3. Checks `~/.claude/scheduled_tasks.json` for an active Argos cron
+4. If schedule exists: quiet (24h cooldown on status messages)
+5. If no schedule: instructs Claude to **auto-start** Pantheon immediately (5-min cooldown)
+6. Reads `~/.claude/pantheon_schedule_meta.json` for the user's preferred interval
+
+**Auto-start is a directive, not a suggestion.** Claude starts Pantheon and announces it — no user permission required. Users opt out via the `pantheon_disabled` file.
+
+**Self-renewal:** Argos checks its own schedule age on every tick (P5.5 priority). If the schedule was created >6 days ago, it auto-renews by deleting and recreating the cron job. No manual `/pantheon renew` needed.
 
 Morpheus reads the session counter for its activity gate and resets it after consolidation.
 

@@ -29,10 +29,16 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 # 2. GitHub: any open PRs or issues updated recently?
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  OPEN_PRS=$(gh pr list --state open --json number --limit 1 2>/dev/null | grep -c "number" || true)
-  if [ "$OPEN_PRS" -gt 0 ]; then
-    SIGNALS+=("open_prs")
+if command -v gh >/dev/null 2>&1; then
+  if gh auth status >/dev/null 2>&1; then
+    OPEN_PRS=$(gh pr list --state open --json number --limit 1 2>/dev/null | grep -c "number" || true)
+    if [ "$OPEN_PRS" -gt 0 ]; then
+      SIGNALS+=("open_prs")
+      CHANGED=true
+    fi
+  else
+    # gh auth expired — this IS a signal, not a skip
+    SIGNALS+=("gh_auth_expired")
     CHANGED=true
   fi
 fi

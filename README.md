@@ -40,13 +40,14 @@ chmod +x ~/.claude/hooks/pantheon-notify.sh
 
 ### 3. Start the local daemon
 
-Open Claude Code in any project and run:
+Open Claude Code in any project. On your first message, Pantheon will **auto-start** and announce:
 
-```
-/pantheon start 10m
-```
+> Pantheon started: Argos monitoring every 10m.
 
-This schedules Argos to evaluate your project every 10 minutes while the REPL is open.
+No manual command needed. If you want a different interval, run `/pantheon start 30m`.
+
+To disable auto-start: `touch ~/.claude/pantheon_disabled`
+To re-enable: `rm ~/.claude/pantheon_disabled` or run `/pantheon start`
 
 ### 3b. Auto-start on session resume (optional)
 

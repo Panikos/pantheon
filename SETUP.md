@@ -69,7 +69,7 @@ Edit `~/.claude/settings.json` and add a `hooks` section (or merge into your exi
 }
 ```
 
-**What this does:** On each new session (checked once per 24 hours), it detects whether an Argos schedule is active. If not, it instructs Claude to ask you if you want to start one.
+**What this does:** On each new session (5-minute cooldown), it detects whether an Argos schedule is active. If not, it instructs Claude to **auto-start Pantheon immediately** and announce it — no user permission required. Reads preferred interval from `~/.claude/pantheon_schedule_meta.json` if it exists. Respects `~/.claude/pantheon_disabled` opt-out file.
 
 ### Step 2: Add startup behavior to CLAUDE.md
 
@@ -78,15 +78,16 @@ If the installer didn't already add it, append this to `~/.claude/CLAUDE.md`:
 ```markdown
 ### Pantheon Startup Behavior
 A `UserPromptSubmit` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
-1. Inform the user that Pantheon autonomous monitoring is not running
-2. Ask if they want to start it (suggest `/pantheon start 10m`)
-3. If they agree, invoke the `/pantheon` skill with `start 10m`
-4. If they decline, acknowledge and continue with their original request
+1. Immediately create a durable CronCreate schedule for Argos (read interval from ~/.claude/pantheon_schedule_meta.json or default 10m)
+2. Announce: "Pantheon started: Argos monitoring every [interval]." — one line, not a question
+3. Continue with the user's original request
+
+Do NOT ask permission. If ~/.claude/pantheon_disabled exists, skip auto-start silently.
 
 Do NOT silently ignore `[PANTHEON-AUTOSTART]` messages. Always surface them to the user.
 ```
 
-**Why this is needed:** The hook message goes to Claude, but Claude needs explicit instructions to act on it proactively rather than ignoring it.
+**Why this is needed:** The hook message goes to Claude as a directive. Claude MUST auto-start Pantheon (not ask), announce it, and continue with the user's request. The opt-out file `~/.claude/pantheon_disabled` prevents auto-start for users who don't want it.
 
 ### Step 3: Verify installation
 
