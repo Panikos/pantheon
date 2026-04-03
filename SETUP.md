@@ -59,7 +59,7 @@ Edit `~/.claude/settings.json` and add a `hooks` section (or merge into your exi
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'if [ ! -f \"$HOME/.claude/pantheon_checked\" ] || [ \"$(find \"$HOME/.claude/pantheon_checked\" -mmin +1440 2>/dev/null)\" ]; then touch \"$HOME/.claude/pantheon_checked\"; if [ -f \"$HOME/.claude/scheduled_tasks.json\" ] && grep -q \"argos\" \"$HOME/.claude/scheduled_tasks.json\" 2>/dev/null; then echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON] Argos schedule is active.\\\"}\"; else echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON-AUTOSTART] No active Argos schedule. Ask the user: Pantheon autonomous monitoring is not running. Would you like me to start it? Then wait for their answer. If yes, run /pantheon start 10m. If no, acknowledge and continue.\\\"}\"; fi; else echo \"{\\\"result\\\":\\\"pass\\\"}\"; fi'",
+            "command": "bash -c 'if [ ! -f \"$HOME/.claude/pantheon_checked\" ] || [ \"$(find \"$HOME/.claude/pantheon_checked\" -mmin +5 2>/dev/null)\" ]; then touch \"$HOME/.claude/pantheon_checked\"; if [ -f \"$HOME/.claude/scheduled_tasks.json\" ] && grep -q \"argos\" \"$HOME/.claude/scheduled_tasks.json\" 2>/dev/null; then echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON] Argos schedule is active.\\\"}\"; else echo \"{\\\"result\\\":\\\"pass\\\",\\\"message\\\":\\\"[PANTHEON-AUTOSTART] No active Argos schedule. Ask the user: Pantheon autonomous monitoring is not running. Would you like me to start it? Then wait for their answer. If yes, run /pantheon start 10m. If no, acknowledge and continue.\\\"}\"; fi; else echo \"{\\\"result\\\":\\\"pass\\\"}\"; fi'",
             "timeout": 3000
           }
         ]
@@ -192,7 +192,7 @@ Local cron jobs are session-scoped by default. Use `durable: true` (Pantheon doe
 ### Hook doesn't fire on session start
 - Verify the hook is in `~/.claude/settings.json` under `hooks.UserPromptSubmit`
 - Check that the bash command syntax is correct (escaped quotes are tricky)
-- The hook only fires once per 24 hours — delete `~/.claude/pantheon_checked` to force a re-check
+- The hook has a 5-minute cooldown to avoid nagging within a session — delete `~/.claude/pantheon_checked` to force a re-check
 
 ### Argos runs but does nothing
 - Check `argos-precheck.sh` is executable: `chmod +x ~/.claude/hooks/argos-precheck.sh`
