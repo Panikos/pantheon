@@ -149,10 +149,10 @@ if ! $SKIP_HOOKS; then
         echo -e "  ${YELLOW}MANUAL STEP:${NC} Add this to your ~/.claude/settings.json:"
         echo ""
         echo '  "hooks": {'
-        echo '    "UserPromptSubmit": ['
+        echo '    "SessionStart": ['
         echo '      {'
         echo '        "matcher": "",'
-        echo '        "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 3000}]'
+        echo '        "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 5000}]'
         echo '      }'
         echo '    ],'
         echo '    "Stop": ['

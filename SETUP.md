@@ -59,11 +59,11 @@ The installer copies `pantheon_hook.sh` and `pantheon_stop_hook.sh` to `~/.claud
 ```json
 {
   "hooks": {
-    "UserPromptSubmit": [
+    "SessionStart": [
       {
         "matcher": "",
         "hooks": [
-          {"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 3000}
+          {"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 5000}
         ]
       }
     ],
@@ -79,12 +79,13 @@ The installer copies `pantheon_hook.sh` and `pantheon_stop_hook.sh` to `~/.claud
 }
 ```
 
-**Startup hook** (`pantheon_hook.sh`):
+**Startup hook** (`pantheon_hook.sh`) — uses `SessionStart` event:
+- Fires **before any user message**, when the session begins or resumes
+- Output is injected as `additionalContext` — Claude receives it as context, not as a message it can ignore
 - Checks `~/.claude/pantheon_disabled` (global) — skips if present
-- 30-minute cooldown via project-scoped `autostart_fired` — prevents repeated nagging
 - Checks for remote commits (git fetch + ahead count) — warns if remote Argos pushed while away
-- If Argos schedule is active: quiet `[PANTHEON]` confirmation
-- If no schedule: `[PANTHEON-AUTOSTART]` directive telling Claude to auto-start immediately
+- If Argos schedule is active: quiet context injection
+- If no schedule: `[PANTHEON-AUTOSTART]` context with exact CronCreate parameters
 - Reads preferred interval from project-scoped `schedule_meta.json`
 
 **Stop hook** (`pantheon_stop_hook.sh`):
@@ -96,7 +97,7 @@ If the installer didn't already add it, append this to `~/.claude/CLAUDE.md`:
 
 ```markdown
 ### Pantheon Startup Behavior
-A `UserPromptSubmit` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
+A `SessionStart` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
 1. Immediately create a durable CronCreate schedule for Argos (read interval from ~/.claude/pantheon_schedule_meta.json or default 10m)
 2. Announce: "Pantheon started: Argos monitoring every [interval]." — one line, not a question
 3. Continue with the user's original request
@@ -161,7 +162,7 @@ For maximum coverage, run both:
 ## How It Works
 
 ### On session start:
-1. `UserPromptSubmit` hook fires on your first message
+1. `SessionStart` hook fires on your first message
 2. Hook checks `~/.claude/scheduled_tasks.json` for active Argos cron
 3. If active: quiet confirmation
 4. If inactive: Claude asks you if you want to start
@@ -201,7 +202,7 @@ For maximum coverage, run both:
 | `notifications/history.jsonl` | `~/.claude/` | Notification audit log |
 | `pantheon_hook.sh` | `~/.claude/` | Startup hook script (referenced by settings.json) |
 | `pantheon_stop_hook.sh` | `~/.claude/` | Stop hook script (warns about unpushed commits) |
-| `pantheon/autostart_fired` | `~/.claude/projects/<ID>/` | 30-min cooldown (project-scoped) |
+| `pantheon/autostart_fired` | `~/.claude/projects/<ID>/` | Legacy cooldown file (not needed with SessionStart hook) |
 | `pantheon/schedule_meta.json` | `~/.claude/projects/<ID>/` | Interval preference (project-scoped) |
 | `pantheon/session_count` | `~/.claude/projects/<ID>/` | Session counter for Morpheus (project-scoped) |
 | `pantheon/hermes_manifest.json` | `~/.claude/projects/<ID>/` | Hermes task state for cross-session resume |
@@ -223,7 +224,7 @@ Hermes dispatches parallel workers for large tasks. If a session closes mid-task
 Local cron jobs are session-scoped by default. Use `durable: true` (Pantheon does this automatically) to persist across restarts. If they still disappear, the 7-day auto-expiry may have triggered — run `/pantheon start 10m` again.
 
 ### Hook doesn't fire on session start
-- Verify the hook is in `~/.claude/settings.json` under `hooks.UserPromptSubmit`
+- Verify the hook is in `~/.claude/settings.json` under `hooks.SessionStart`
 - Verify `~/.claude/pantheon_hook.sh` exists and is executable
 - The hook has a 30-minute cooldown — delete `~/.claude/pantheon_autostart_fired` to force a re-check
 
@@ -244,6 +245,6 @@ Local cron jobs are session-scoped by default. Use `durable: true` (Pantheon doe
 ```
 
 This removes skill and hook files. You must manually remove:
-- The `UserPromptSubmit` hook from `~/.claude/settings.json`
+- The `SessionStart` hook from `~/.claude/settings.json`
 - The Pantheon section from `~/.claude/CLAUDE.md`
 - Remote triggers at https://claude.ai/code/scheduled

@@ -254,7 +254,7 @@ The project ID is derived from `$PWD` using: `pwd | sed 's|^/c/|C--|' | sed 's|^
 
 ### Auto-Start Flow
 
-A `UserPromptSubmit` hook manages session lifecycle:
+A `SessionStart` hook manages session lifecycle:
 
 1. Derives project path from `$PWD`
 2. Increments project-scoped session counter

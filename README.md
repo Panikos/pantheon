@@ -57,18 +57,18 @@ No manual command needed. If you want a different interval, run `/pantheon start
 To disable auto-start: `/pantheon disable`
 To re-enable: `/pantheon enable`
 
-### 3b. Auto-start on session resume (optional)
+### 3b. Auto-start on session start (recommended)
 
-Add this to your `~/.claude/settings.json` to have Pantheon prompt you to start on every new session:
+Add this to your `~/.claude/settings.json` so Pantheon auto-starts on every new session. Uses the `SessionStart` hook which fires before any user message:
 
 ```json
 {
   "hooks": {
-    "UserPromptSubmit": [
+    "SessionStart": [
       {
         "matcher": "",
         "hooks": [
-          {"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 3000}
+          {"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 5000}
         ]
       }
     ],
@@ -88,7 +88,7 @@ And add this to your `~/.claude/CLAUDE.md`:
 
 ```markdown
 ### Pantheon Startup Behavior
-A `UserPromptSubmit` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
+A `SessionStart` hook checks for an active Argos schedule on session start. When you see a `[PANTHEON-AUTOSTART]` hook message, you MUST:
 1. Immediately create a durable CronCreate schedule for Argos (default: every 10 minutes)
 2. Read `~/.claude/pantheon_schedule_meta.json` (or project-scoped `~/.claude/projects/<ID>/pantheon/schedule_meta.json`) if it exists — use the stored interval preference instead of the default
 3. Announce to the user: "Pantheon started: Argos monitoring every [interval]." — one line, not a question
