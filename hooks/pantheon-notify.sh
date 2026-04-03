@@ -22,7 +22,9 @@ NOTIFY_DIR="$HOME/.claude/notifications"
 mkdir -p "$NOTIFY_DIR"
 
 # Build notification JSON
-NOTIFICATION="{\"ts\":\"$TIMESTAMP\",\"source\":\"$SOURCE\",\"severity\":\"$SEVERITY\",\"message\":$(echo "$MESSAGE" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read().strip()))' 2>/dev/null || echo "\"$MESSAGE\""),\"local_time\":\"$LOCAL_TIME\"}"
+# Escape message for JSON (pure bash — no jq or python dependency)
+ESCAPED_MSG=$(echo "$MESSAGE" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+NOTIFICATION="{\"ts\":\"$TIMESTAMP\",\"source\":\"$SOURCE\",\"severity\":\"$SEVERITY\",\"message\":\"$ESCAPED_MSG\",\"local_time\":\"$LOCAL_TIME\"}"
 
 # Write current (latest) notification — Duskit and other watchers read this
 echo "$NOTIFICATION" > "$NOTIFY_DIR/current.json"
