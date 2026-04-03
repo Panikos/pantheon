@@ -2,7 +2,7 @@
 
 An open-source autonomous agent suite for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that replicates ~85% of the unreleased Kairos daemon architecture using publicly available Claude Code features.
 
-Four agents from Greek mythology, one orchestrator:
+Five agents from Greek mythology, one orchestrator:
 
 | Agent | Named After | Role |
 |-------|------------|------|
@@ -10,6 +10,7 @@ Four agents from Greek mythology, one orchestrator:
 | **Argos** | The all-seeing giant (100 eyes, never slept) | Autonomous decide-act-sleep daemon |
 | **Morpheus** | God of dreams | Memory consolidation |
 | **Athena** | Goddess of wisdom and strategic warfare | Deep strategic planning |
+| **Hermes** | Messenger god, guide between worlds | Parallel work coordinator |
 
 ## What This Does
 
@@ -209,6 +210,15 @@ argos-precheck.sh (bash, ~1 second)
 | `/athena review [plan]` | Refine existing plan |
 | `/athena continue` | Resume last planning session |
 
+### Hermes (parallel coordinator)
+
+| Command | Description |
+|---------|-------------|
+| `/hermes [task]` | Decompose task, dispatch parallel workers |
+| `/hermes continue` | Resume an in-progress task from a previous session |
+| `/hermes status` | Show current task state |
+| `/hermes cancel` | Cancel current task and clean up |
+
 ## Comparison to Kairos
 
 In March 2026, Claude Code's source was [accidentally leaked](https://thehackernews.com/2026/04/claude-code-tleaked-via-npm-packaging.html) via an npm packaging error. The leak revealed three unreleased systems: **Kairos** (autonomous daemon), **autoDream** (memory consolidation), and **ULTRAPLAN** (deep planning). Pantheon replicates their architecture using publicly available Claude Code features.
@@ -223,10 +233,11 @@ In March 2026, Claude Code's source was [accidentally leaked](https://thehackern
 | Push notifications | SendUserMessage with proactive status | File-based + Windows toast for P0/P1 | 60% |
 | Always-on daemon | True background process | RemoteTrigger in Anthropic cloud (1h min interval) | 70% |
 | GitHub integration | Native webhook subscriptions | gh CLI polling every 5 min | 65% |
-| Session awareness | Tracks session count, idle time | Session counter in startup hook | 50% |
+| Session awareness | Tracks session count, idle time | Project-scoped session counter in startup hook | 50% |
 | Output tiers | BriefTool with 3 rendering modes | Not replicable (runtime UI feature) | 0% |
+| Coordinator Mode | Parallel workers with mailbox, orchestrator reconciles | Hermes: Agent tool with run_in_background + worktree isolation | 75% |
 
-**Overall: ~85% coverage.** See [docs/gaps_list.md](docs/gaps_list.md) for the full gap analysis.
+**Overall: ~88% coverage.** See [docs/gaps_list.md](docs/gaps_list.md) for the full gap analysis.
 
 ### What Pantheon Can't Do (Yet)
 
@@ -247,6 +258,7 @@ pantheon/
     argos.md             # Daemon — decide-act-sleep evaluation loop
     morpheus.md          # Memory — 4-phase consolidation process
     athena.md            # Planning — deep strategic analysis
+    hermes.md            # Coordinator — parallel task dispatch and reconciliation
   hooks/
     pantheon_hook.sh     # Startup hook — auto-starts Pantheon on session resume
     pantheon_stop_hook.sh # Stop hook — warns about unpushed commits if remote deploy active

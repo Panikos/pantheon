@@ -16,7 +16,7 @@
 | **Feature flags** | 44 compile-time flags gating capabilities | None — everything is always on | MINOR |
 | **Session awareness** | Tracks session count, idle time, last activity automatically | Project-scoped session counter + 30-min cooldown hook | MEDIUM → MITIGATED |
 | **Cost management** | Prompt cache expires after 5 min idle — SleepTool balances wake-up cost vs cache expiry | Pre-check gate skips ~80% of ticks | MAJOR → MITIGATED |
-| **Coordinator Mode** | One Claude orchestrates parallel workers via mailbox system | No equivalent — `/review-all` chains sequentially | MAJOR |
+| **Coordinator Mode** | One Claude orchestrates parallel workers via mailbox system | `/hermes` — Agent tool with run_in_background + worktree isolation + manifest for cross-session | MAJOR → MITIGATED |
 | **BUDDY companion** | 18 species, 5 stats, rarity tiers, cosmetic system | Duskit exists as minimal companion (no stats/species) | MINOR |
 | **Self-Healing Memory** | MEMORY.md as pointer index, topic files on-demand, strict write discipline | Morpheus implements same pattern (index + topic files + 200-line limit) | MATCHED |
 
