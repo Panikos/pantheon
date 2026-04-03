@@ -200,7 +200,9 @@ RULES:
 }
 ```
 
-After creation, confirm:
+After creation:
+1. Create deploy marker: `touch ~/.claude/pantheon_deploy_active` (used by stop hook to warn about unpushed commits)
+2. Confirm:
 ```
 PANTHEON REMOTE DAEMON DEPLOYED
   Trigger: argos-daemon (ID: xxx)
@@ -211,6 +213,7 @@ PANTHEON REMOTE DAEMON DEPLOYED
 
   Manage at: https://claude.ai/code/scheduled/xxx
   This runs in Anthropic's cloud — it fires even when your terminal is closed.
+  Remember to push local commits before closing — remote Argos works on the pushed code.
 ```
 
 ### `pantheon undeploy`
@@ -218,7 +221,8 @@ Disable the remote Argos daemon.
 
 1. Call RemoteTrigger list to find argos-daemon triggers
 2. Call RemoteTrigger update with `enabled: false`
-3. Direct user to https://claude.ai/code/scheduled to fully delete if needed
+3. Remove deploy marker: `rm -f ~/.claude/pantheon_deploy_active`
+4. Direct user to https://claude.ai/code/scheduled to fully delete if needed
 
 ### `pantheon remote-status`
 Check the remote daemon status.

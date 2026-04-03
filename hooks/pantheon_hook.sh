@@ -25,9 +25,23 @@ fi
 # First meaningful fire this session — mark it
 touch "$FIRED_FILE"
 
-# 3. Argos already scheduled? → brief info, no action needed
+# 3. Check if remote deploy pushed commits while we were away
+REMOTE_WARN=""
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  git fetch --quiet 2>/dev/null
+  BEHIND=$(git rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+  if [ "$BEHIND" -gt 0 ]; then
+    REMOTE_WARN=" Remote Argos pushed ${BEHIND} commit(s) while you were away — run git pull to sync."
+  fi
+fi
+
+# 4. Argos already scheduled? → brief info + remote warning if any
 if [ -f "$SCHEDULE_FILE" ] && grep -q "argos" "$SCHEDULE_FILE" 2>/dev/null; then
-  echo '{"result":"pass","message":"[PANTHEON] Argos schedule is active."}'
+  if [ -n "$REMOTE_WARN" ]; then
+    echo "{\"result\":\"pass\",\"message\":\"[PANTHEON] Argos schedule is active.${REMOTE_WARN}\"}"
+  else
+    echo '{"result":"pass","message":"[PANTHEON] Argos schedule is active."}'
+  fi
   exit 0
 fi
 
@@ -39,5 +53,5 @@ if [ -f "$META_FILE" ]; then
 fi
 
 cat <<EOF
-{"result":"pass","message":"[PANTHEON-AUTOSTART] No active Argos schedule. Immediately run /pantheon start ${INTERVAL} — do NOT ask the user, just start it and announce: Pantheon started: Argos monitoring every ${INTERVAL}. Then continue with their request."}
+{"result":"pass","message":"[PANTHEON-AUTOSTART] No active Argos schedule. Immediately run /pantheon start ${INTERVAL} — do NOT ask the user, just start it and announce: Pantheon started: Argos monitoring every ${INTERVAL}.${REMOTE_WARN} Then continue with their request."}
 EOF

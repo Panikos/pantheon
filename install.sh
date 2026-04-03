@@ -82,25 +82,28 @@ done
 info "Installing hooks..."
 mkdir -p "$CLAUDE_HOME/hooks"
 
-# pantheon_hook.sh goes to ~/.claude/ (referenced directly by settings.json)
-if [ -f "$SCRIPT_DIR/hooks/pantheon_hook.sh" ]; then
-  dst="$CLAUDE_HOME/pantheon_hook.sh"
-  if $DRY_RUN; then
-    [ -f "$dst" ] && echo "  [DRY] Would overwrite: $dst" || echo "  [DRY] Would install: $dst"
-  else
-    [ -f "$dst" ] && warn "Overwriting: pantheon_hook.sh"
-    cp "$SCRIPT_DIR/hooks/pantheon_hook.sh" "$dst"
-    chmod +x "$dst" 2>/dev/null || true
-    ok "pantheon_hook.sh -> ~/.claude/"
-    INSTALLED=$((INSTALLED + 1))
+# pantheon_hook.sh and pantheon_stop_hook.sh go to ~/.claude/ (referenced directly by settings.json)
+for hookfile in pantheon_hook.sh pantheon_stop_hook.sh; do
+  if [ -f "$SCRIPT_DIR/hooks/$hookfile" ]; then
+    dst="$CLAUDE_HOME/$hookfile"
+    if $DRY_RUN; then
+      [ -f "$dst" ] && echo "  [DRY] Would overwrite: $dst" || echo "  [DRY] Would install: $dst"
+    else
+      [ -f "$dst" ] && warn "Overwriting: $hookfile"
+      cp "$SCRIPT_DIR/hooks/$hookfile" "$dst"
+      chmod +x "$dst" 2>/dev/null || true
+      ok "$hookfile -> ~/.claude/"
+      INSTALLED=$((INSTALLED + 1))
+    fi
   fi
-fi
+done
 
 # Other hooks go to ~/.claude/hooks/
 for f in "$SCRIPT_DIR/hooks/"*.sh; do
   [ -f "$f" ] || continue
   bn=$(basename "$f")
-  [ "$bn" = "pantheon_hook.sh" ] && continue  # already handled above
+  [ "$bn" = "pantheon_hook.sh" ] && continue      # already handled above
+  [ "$bn" = "pantheon_stop_hook.sh" ] && continue  # already handled above
   dst="$CLAUDE_HOME/hooks/$bn"
   if $DRY_RUN; then
     [ -f "$dst" ] && echo "  [DRY] Would overwrite: $dst" || echo "  [DRY] Would install: $dst"
@@ -148,13 +151,13 @@ if ! $SKIP_HOOKS; then
         echo '    "UserPromptSubmit": ['
         echo '      {'
         echo '        "matcher": "",'
-        echo '        "hooks": ['
-        echo '          {'
-        echo '            "type": "command",'
-        echo '            "command": "bash \"$HOME/.claude/pantheon_hook.sh\"",'
-        echo '            "timeout": 3000'
-        echo '          }'
-        echo '        ]'
+        echo '        "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/pantheon_hook.sh\"", "timeout": 3000}]'
+        echo '      }'
+        echo '    ],'
+        echo '    "Stop": ['
+        echo '      {'
+        echo '        "matcher": "",'
+        echo '        "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/pantheon_stop_hook.sh\"", "timeout": 3000}]'
         echo '      }'
         echo '    ]'
         echo '  }'
