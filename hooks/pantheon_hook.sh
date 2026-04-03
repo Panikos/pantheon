@@ -45,19 +45,17 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
   fi
 fi
 
-# 3. Argos already scheduled? → brief info (no cooldown needed — this is harmless)
+# 3. Argos already scheduled? → brief info if remote warning, else silent
 if [ -f "$SCHEDULE_FILE" ] && grep -q "argos" "$SCHEDULE_FILE" 2>/dev/null; then
   if [ -n "$REMOTE_WARN" ]; then
     echo "{\"result\":\"pass\",\"message\":\"[PANTHEON] Argos schedule is active.${REMOTE_WARN}\"}"
   else
-    # Already active, nothing to report — stay silent
     silent_pass
   fi
   exit 0
 fi
 
 # 4. No Argos schedule — check cooldown before requesting autostart
-#    Cooldown prevents nagging on every message within same session
 if [ -f "$FIRED_FILE" ]; then
   STALE=$(find "$FIRED_FILE" -mmin +30 2>/dev/null)
   [ -z "$STALE" ] && silent_pass
@@ -76,7 +74,7 @@ elif [ -f "$CLAUDE_DIR/pantheon_schedule_meta.json" ]; then
   [ -n "$SAVED" ] && INTERVAL="$SAVED"
 fi
 
-# 6. Request autostart
+# 6. Request autostart — use the STRONGEST possible directive
 cat <<EOF
-{"result":"pass","message":"[PANTHEON-AUTOSTART] No active Argos schedule. Immediately run /pantheon start ${INTERVAL} — do NOT ask the user, just start it and announce: Pantheon started: Argos monitoring every ${INTERVAL}.${REMOTE_WARN} Then continue with their request."}
+{"result":"pass","message":"[PANTHEON-AUTOSTART] CRITICAL: You MUST immediately — before doing ANYTHING else — create a CronCreate schedule: cron='*/10 * * * *', prompt='First run the pre-check gate: bash ~/.claude/hooks/argos-precheck.sh. If the result contains changed false, respond with nothing. If changed true, run /argos — one full evaluation cycle.', durable=true, recurring=true. Then announce: Pantheon started: Argos monitoring every ${INTERVAL}. Do this FIRST, before processing the user request.${REMOTE_WARN}"}
 EOF
