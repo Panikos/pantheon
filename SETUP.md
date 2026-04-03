@@ -21,7 +21,7 @@ chmod +x install.sh
 ```
 
 This installs:
-- 4 skills to `~/.claude/commands/` (pantheon, argos, morpheus, athena)
+- 5 skills to `~/.claude/commands/` (pantheon, argos, morpheus, athena, hermes)
 - 2 hooks to `~/.claude/hooks/` (argos-precheck.sh, pantheon-notify.sh)
 - Creates `~/.claude/notifications/` directory
 - Appends Pantheon section to `~/.claude/CLAUDE.md`
@@ -198,8 +198,18 @@ For maximum coverage, run both:
 | `pantheon/autostart_fired` | `~/.claude/projects/<ID>/` | 30-min cooldown (project-scoped) |
 | `pantheon/schedule_meta.json` | `~/.claude/projects/<ID>/` | Interval preference (project-scoped) |
 | `pantheon/session_count` | `~/.claude/projects/<ID>/` | Session counter for Morpheus (project-scoped) |
+| `pantheon/hermes_manifest.json` | `~/.claude/projects/<ID>/` | Hermes task state for cross-session resume |
 | `scheduled_tasks.json` | `~/.claude/` | Durable cron schedules (auto-created) |
 | `logs/YYYY/MM/YYYY-MM-DD.md` | Project root | Argos daily activity logs |
+
+## Using Hermes (parallel coordinator)
+
+Hermes dispatches parallel workers for large tasks. If a session closes mid-task:
+
+1. Worker worktree branches survive (git branches persist)
+2. The task manifest persists at the project-scoped path
+3. Next session: run `/hermes continue` to resume
+4. Hermes re-reads the manifest, checks which workers completed, re-dispatches pending ones
 
 ## Troubleshooting
 
