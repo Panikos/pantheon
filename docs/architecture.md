@@ -117,6 +117,43 @@ Phase 5: DELIVERY
 
 **Always on-demand.** Athena is never scheduled automatically. Deep planning should be intentional.
 
+### Hermes (Parallel Coordinator)
+
+Decomposes complex tasks into independent subtasks and dispatches them to parallel worker agents.
+
+**Six-phase process:**
+
+```
+Phase 1: DECOMPOSE
+  Break task into independent subtasks, organized into waves.
+  Wave 1 = no dependencies (run in parallel).
+  Wave 2+ = depends on prior wave results.
+
+Phase 2: DISPATCH
+  Launch all wave workers simultaneously using Agent tool:
+    run_in_background: true
+    isolation: "worktree" (each worker gets isolated git copy)
+
+Phase 3: PERSIST MANIFEST
+  Save task state to project-scoped hermes_manifest.json.
+  Enables cross-session resume if session closes mid-task.
+
+Phase 4: COLLECT
+  Background agents notify on completion.
+  Update manifest. If wave complete, dispatch next wave.
+
+Phase 5: RECONCILE
+  Review all results. Detect conflicts (same file modified by 2 workers).
+  Merge worktree branches. Run full test suite.
+
+Phase 6: CLEANUP
+  Remove worktree branches. Update manifest. Log to Argos daily log.
+```
+
+**Cross-session resilience:** The manifest persists at `~/.claude/projects/<PROJECT_ID>/pantheon/hermes_manifest.json`. If a session closes mid-task, `/hermes continue` reads the manifest, checks which workers completed (worktree branches survive session death), and re-dispatches pending subtasks.
+
+**Integration:** Athena produces plans with WBS → Hermes can execute them as parallel subtasks. Argos can invoke Hermes for large P2 backlog tasks. Morpheus consolidates learnings after Hermes completes.
+
 ## Two-Tier Execution Model
 
 ### Tier 1: Local Execution
@@ -244,4 +281,5 @@ Morpheus reads the session counter for its activity gate and resets it after con
 | ULTRAPLAN remote container | /athena skill | Kairos has dedicated 30-min cloud compute; we run in-session |
 | Append-only daily logs | Same pattern, prompt-enforced | Kairos enforces at runtime; we instruct in the prompt |
 | 15-second blocking budget | Mentioned in prompt | Kairos auto-backgrounds; we can't enforce at runtime |
+| Coordinator Mode (parallel workers) | /hermes skill | Kairos has native mailbox; we use Agent tool with run_in_background + worktree |
 | GitHub webhook subscriptions | gh CLI polling via cron | Kairos is push-based; we poll |

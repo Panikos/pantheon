@@ -17,6 +17,7 @@ for arg in "$@"; do
             "$CLAUDE_HOME/commands/argos.md" \
             "$CLAUDE_HOME/commands/morpheus.md" \
             "$CLAUDE_HOME/commands/athena.md" \
+            "$CLAUDE_HOME/commands/hermes.md" \
             "$CLAUDE_HOME/hooks/argos-precheck.sh" \
             "$CLAUDE_HOME/hooks/pantheon-notify.sh"
       echo "Removed skill and hook files."
@@ -202,7 +203,7 @@ When you see a `[PANTHEON]` message (schedule already active), say nothing — i
 ### /pantheon — Orchestrator & Control Plane
 - `/pantheon start 10m` — schedule Argos on recurring cron (durable, survives restarts)
 - `/pantheon stop` — cancel all scheduled agents
-- `/pantheon status` — show state of Argos, Morpheus, Athena
+- `/pantheon status` — show state of all agents
 - `/pantheon deploy` — create always-on cloud daemon (survives terminal close)
 
 ### /argos — Autonomous Daemon Agent
@@ -212,7 +213,10 @@ Decide-act-sleep loop. Priority ladder: P0 broken -> P1 signals -> P2 backlog ->
 Four-phase: Orient -> Gather Signal -> Consolidate -> Prune.
 
 ### /athena — Deep Strategic Planning
-Problem decomposition -> 3+ options with trade-off matrix -> implementation blueprint.'
+Problem decomposition -> 3+ options with trade-off matrix -> implementation blueprint.
+
+### /hermes — Parallel Work Coordinator
+Decomposes tasks into subtasks, dispatches parallel workers, reconciles results. Cross-session via manifest.'
 
       if $DRY_RUN; then
         echo "  [DRY] Would append Pantheon section to CLAUDE.md"
@@ -246,6 +250,7 @@ else
   echo "    /argos     — autonomous daemon (decide-act-sleep)"
   echo "    /morpheus  — memory consolidation"
   echo "    /athena    — deep strategic planning"
+  echo "    /hermes    — parallel work coordinator"
   echo ""
   echo -e "  ${BOLD}Hooks:${NC}"
   echo "    argos-precheck.sh    — pre-check gate (saves ~80% API cost)"
